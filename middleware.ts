@@ -51,9 +51,10 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // Use getUser() for authorization decisions per Supabase guidance.
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
 
-  if (!isAuthorizedAdmin(session)) {
+  if (userError || !isAuthorizedAdmin(user)) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
     }
