@@ -1,0 +1,62 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+
+const navItems = [
+  { label: 'Dashboard', href: '/admin/dashboard' },
+  { label: 'Projects', href: '/admin/projects' },
+  { label: 'Leads', href: '/admin/leads' },
+  { label: 'Reviews', href: '/admin/reviews' },
+  { label: 'Settings', href: '/admin/settings' }
+]
+
+export function Sidebar() {
+  const pathname = usePathname()
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/admin/login')
+  }
+
+  return (
+    <aside className="flex min-h-screen w-64 flex-col bg-primary px-5 py-6 text-white">
+      <div className="flex flex-col items-start">
+        <img src="/branding.png" alt="S-Square Marketings Logo" className="h-10 w-auto mb-2" loading="lazy" />
+        <p className="mt-1 text-sm text-white/70">Admin CMS</p>
+      </div>
+
+      <nav className="mt-8 grid gap-2">
+        {navItems.map((item) => {
+          const active = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`rounded-xl px-4 py-3 text-sm font-medium transition ${active ? 'bg-white/10' : 'hover:bg-white/5'}`}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      <Link
+        href="/"
+        className="mt-6 inline-flex items-center justify-center rounded-full border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10"
+      >
+        Back to Home
+      </Link>
+
+      <button
+        type="button"
+        className="mt-3 rounded-full border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10 lg:mt-auto"
+        onClick={handleLogout}
+      >
+        Logout
+      </button>
+    </aside>
+  )
+}
