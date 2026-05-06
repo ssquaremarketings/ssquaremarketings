@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { errorResponse, successResponse } from '@/lib/api-response'
 import { requireAdminSession } from '@/lib/auth'
+import { getRequiredEnv } from '@/lib/env'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { projectCreateSchema } from '@/lib/validation'
 
 function stripOptionalProjectFields(payload: Record<string, unknown>) {
@@ -10,6 +12,11 @@ function stripOptionalProjectFields(payload: Record<string, unknown>) {
 
 export async function POST(req: Request) {
   try {
+    const rateLimit = checkRateLimit(req, { key: 'api-projects-post', limit: 20, windowMs: 60_000 })
+    if (!rateLimit.allowed) {
+      return errorResponse('Too many requests', 429)
+    }
+
     const { session, authorized } = await requireAdminSession()
 
     if (!session) {
@@ -22,8 +29,8 @@ export async function POST(req: Request) {
 
     const body = projectCreateSchema.parse(await req.json())
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
+      getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
     )
 
     let { data, error } = await supabase.from('projects').insert([body]).select().single()
@@ -44,8 +51,13 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const rateLimit = checkRateLimit(req, { key: 'api-projects-get', limit: 120, windowMs: 60_000 })
+    if (!rateLimit.allowed) {
+      return errorResponse('Too many requests', 429)
+    }
+
     const { supabase, session, authorized } = await requireAdminSession()
     const query = supabase.from('projects').select('*').order('created_at', { ascending: false })
     const { data, error } = session && authorized ? await query : await query.eq('published', true)

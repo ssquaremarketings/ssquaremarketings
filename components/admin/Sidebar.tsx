@@ -9,8 +9,7 @@ const navItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
   { label: 'Projects', href: '/admin/projects' },
   { label: 'Leads', href: '/admin/leads' },
-  { label: 'Reviews', href: '/admin/reviews' },
-  { label: 'Settings', href: '/admin/settings' }
+  { label: 'Reviews', href: '/admin/reviews' }
 ]
 
 export function Sidebar() {

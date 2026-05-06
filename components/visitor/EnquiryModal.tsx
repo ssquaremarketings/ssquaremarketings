@@ -2,7 +2,6 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 import type { Project } from "@/lib/types";
-import { supabase } from "@/lib/supabase";
 import { sanitize } from "@/utils/sanitize";
 import { Toast } from "@/components/ui/Toast";
 import { enquirySchema } from '@/lib/validation'
@@ -81,17 +80,22 @@ export default function EnquiryModal({ project, isOpen, onClose, children }: Pro
 
     setLoading(true);
 
-    const { error } = await supabase.from("leads").insert({
-      name: sanitize(name.trim()),
-      phone: phone.trim(),
-      budget,
-      property: sanitize(project.name),
-      message: sanitize(message.trim()),
-    });
+    const response = await fetch('/api/enquiries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: sanitize(name.trim()),
+        phone: phone.trim(),
+        budget,
+        property: sanitize(project.name),
+        message: sanitize(message.trim()),
+      }),
+    })
+    const result = await response.json().catch(() => null)
 
     setLoading(false);
 
-    if (error) {
+    if (!response.ok || !result?.success) {
       setToast({
         message: "Could not submit enquiry. Please try again.",
         type: "error",

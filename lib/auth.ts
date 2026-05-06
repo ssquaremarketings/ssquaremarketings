@@ -1,18 +1,16 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server'
-import type { Session } from '@supabase/supabase-js'
+import 'server-only'
 
-function getAllowedAdminEmails() {
-  return (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean)
-}
+import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { getOptionalAdminEmails } from '@/lib/env'
+import type { Session } from '@supabase/supabase-js'
 
 export function isAuthorizedAdmin(session: Session | null) {
   if (!session) return false
 
-  const allowedEmails = getAllowedAdminEmails()
-  if (allowedEmails.length === 0) return true
+  const allowedEmails = getOptionalAdminEmails()
+  if (allowedEmails.length === 0) {
+    return false
+  }
 
   return allowedEmails.includes((session.user.email || '').toLowerCase())
 }

@@ -231,7 +231,6 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
       setToast({ message: 'Project saved successfully.', type: 'success' })
       setTimeout(() => router.push('/admin/projects'), 700)
     } catch (error: any) {
-      console.error('Save error:', error)
       setToast({ message: error?.message || 'Unable to save project.', type: 'error' })
     } finally {
       setLoading(false)

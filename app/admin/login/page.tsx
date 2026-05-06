@@ -12,6 +12,7 @@ export default function AdminLoginPage() {
   const [checkingSession, setCheckingSession] = useState(true)
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null)
 
   useEffect(() => {
     let active = true
@@ -39,19 +40,60 @@ export default function AdminLoginPage() {
     return () => clearTimeout(timer)
   }, [toast])
 
+  useEffect(() => {
+    const value = sessionStorage.getItem('admin-login-lockout-until')
+    if (value) {
+      const parsed = Number(value)
+      if (Number.isFinite(parsed) && parsed > Date.now()) {
+        setLockoutUntil(parsed)
+      } else {
+        sessionStorage.removeItem('admin-login-lockout-until')
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!lockoutUntil) return
+    const timer = window.setInterval(() => {
+      if (Date.now() >= lockoutUntil) {
+        sessionStorage.removeItem('admin-login-lockout-until')
+        setLockoutUntil(null)
+      }
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [lockoutUntil])
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      setToast({ message: 'Please wait before trying again.', type: 'error' })
+      return
+    }
+
     setLoading(true)
 
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
 
     if (error) {
+      const attempts = Number(sessionStorage.getItem('admin-login-attempts') || '0') + 1
+      sessionStorage.setItem('admin-login-attempts', String(attempts))
+      if (attempts >= 5) {
+        const until = Date.now() + 15 * 60_000
+        sessionStorage.setItem('admin-login-lockout-until', String(until))
+        setLockoutUntil(until)
+        sessionStorage.removeItem('admin-login-attempts')
+      }
       setToast({ message: 'Invalid email or password.', type: 'error' })
       return
     }
 
-    router.replace('/admin/dashboard')
+    sessionStorage.removeItem('admin-login-attempts')
+    sessionStorage.removeItem('admin-login-lockout-until')
+
+    window.location.assign('/admin/dashboard')
   }
 
   if (checkingSession) {
@@ -77,8 +119,8 @@ export default function AdminLoginPage() {
           </div>
         </div>
 
-        <button type="submit" disabled={loading} className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-amber-500 px-5 py-3 font-semibold text-primary disabled:opacity-60" suppressHydrationWarning>
-          {loading ? 'Signing in...' : 'Login'}
+        <button type="submit" disabled={loading || (lockoutUntil ? Date.now() < lockoutUntil : false)} className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-amber-500 px-5 py-3 font-semibold text-primary disabled:opacity-60" suppressHydrationWarning>
+          {loading ? 'Signing in...' : lockoutUntil && Date.now() < lockoutUntil ? 'Try again later' : 'Login'}
         </button>
       </form>
     </main>

@@ -1,16 +1,23 @@
 import Mux from '@mux/mux-node'
 import { errorResponse, successResponse } from '@/lib/api-response'
 import { requireAdminSession } from '@/lib/auth'
+import { getRequiredEnv } from '@/lib/env'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
 const mux = new Mux({
-  tokenId: process.env.MUX_TOKEN_ID!,
-  tokenSecret: process.env.MUX_TOKEN_SECRET!,
+  tokenId: getRequiredEnv('MUX_TOKEN_ID'),
+  tokenSecret: getRequiredEnv('MUX_TOKEN_SECRET'),
 })
 
 export async function POST(request: Request) {
   try {
+    const rateLimit = checkRateLimit(request, { key: 'api-mux-upload-url', limit: 10, windowMs: 60_000 })
+    if (!rateLimit.allowed) {
+      return errorResponse('Too many requests', 429)
+    }
+
     const { session, authorized } = await requireAdminSession()
 
     if (!session) {

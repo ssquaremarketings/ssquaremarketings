@@ -47,7 +47,6 @@ export default function VideoUpload({
       const response = await res.json()
       const { uploadId, uploadUrl } = response.data
       if (!uploadId || !uploadUrl) {
-        console.error('Invalid Mux response:', response)
         throw new Error('Upload URL missing')
       }
       setCurrentUploadId(uploadId)

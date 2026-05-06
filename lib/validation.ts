@@ -45,6 +45,14 @@ export const enquirySchema = z.object({
   property: z.string().trim().min(1).max(160),
 }).strict()
 
+export const contactLeadSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  phone: z.string().trim().regex(/^\d{10}$/, 'Phone must be exactly 10 digits'),
+  email: z.string().trim().email().max(160),
+  subject: z.enum(['General Inquiry', 'Plot Inquiry', 'Site Visit']),
+  message: z.string().trim().max(5000).optional().nullable(),
+}).strict()
+
 export const reviewSchema = z.object({
   reviewer_name: z.string().trim().min(2).max(120),
   phone: phoneSchema.optional().nullable(),

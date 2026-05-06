@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 import { sanitize } from '@/utils/sanitize'
-import { supabase } from '@/lib/supabase'
 import StarRating from './StarRating'
 import { reviewSchema } from '@/lib/validation'
 
@@ -43,17 +42,22 @@ export default function ReviewForm({ projectId, projectName }: Props) {
     if (!validate()) return
     setSubmitting(true)
 
-    const { error } = await supabase.from('reviews').insert({
-      reviewer_name: sanitize(name.trim()),
-      phone: phone.trim() || null,
-      property: property.trim() || null,
-      project_id: projectId ?? null,
-      rating,
-      review_text: sanitize(reviewText.trim()),
+    const response = await fetch('/api/reviews', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reviewer_name: sanitize(name.trim()),
+        phone: phone.trim() || null,
+        property: property.trim() || null,
+        project_id: projectId ?? null,
+        rating,
+        review_text: sanitize(reviewText.trim()),
+      }),
     })
+    const result = await response.json().catch(() => null)
 
     setSubmitting(false)
-    if (!error) setSubmitted(true)
+    if (response.ok && result?.success) setSubmitted(true)
   }
 
   if (submitted) return (

@@ -2,13 +2,15 @@ import { createClient } from '@supabase/supabase-js'
 import { getMuxClient } from './mux'
 import { errorResponse, successResponse } from '@/lib/api-response'
 import { requireAdminSession } from '@/lib/auth'
+import { getRequiredEnv } from '@/lib/env'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { assetIdSchema, projectUpdateSchema } from '@/lib/validation'
 
 export const runtime = 'nodejs'
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
+  getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
 )
 
 function stripOptionalProjectFields(payload: Record<string, unknown>) {
@@ -18,6 +20,11 @@ function stripOptionalProjectFields(payload: Record<string, unknown>) {
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   try {
+    const rateLimit = checkRateLimit(req, { key: 'api-projects-put', limit: 30, windowMs: 60_000 })
+    if (!rateLimit.allowed) {
+      return errorResponse('Too many requests', 429)
+    }
+
     const { session, authorized } = await requireAdminSession()
 
     if (!session) {
@@ -117,10 +124,19 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   try {
-    const { session } = await requireAdminSession()
+    const rateLimit = checkRateLimit(_req, { key: 'api-projects-delete', limit: 20, windowMs: 60_000 })
+    if (!rateLimit.allowed) {
+      return errorResponse('Too many requests', 429)
+    }
+
+    const { session, authorized } = await requireAdminSession()
 
     if (!session) {
       return errorResponse('Unauthorized', 401)
+    }
+
+    if (!authorized) {
+      return errorResponse('Forbidden', 403)
     }
 
     const { id } = params

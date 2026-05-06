@@ -2,13 +2,15 @@ import { createClient } from '@supabase/supabase-js'
 import { getMuxClient } from '../mux'
 import { errorResponse, successResponse } from '@/lib/api-response'
 import { requireAdminSession } from '@/lib/auth'
+import { getRequiredEnv } from '@/lib/env'
+import { checkRateLimit } from '@/lib/rate-limit'
 import { assetIdSchema } from '@/lib/validation'
 
 export const runtime = 'nodejs'
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
+  getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
 )
 
 /**
@@ -23,6 +25,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const rateLimit = checkRateLimit(_req, { key: 'api-project-video-delete', limit: 20, windowMs: 60_000 })
+    if (!rateLimit.allowed) {
+      return errorResponse('Too many requests', 429)
+    }
+
     const { session, authorized } = await requireAdminSession()
 
     if (!session) {
@@ -66,7 +73,7 @@ export async function DELETE(
         // This prevents orphaned records if Mux asset was manually deleted
         if (muxErr?.status !== 404) {
           // Only suppress 404 errors; other errors are legitimate
-          console.error('Mux deletion error:', muxErr)
+          console.error('Mux deletion error')
         }
       }
     }
@@ -90,7 +97,7 @@ export async function DELETE(
       message: 'Video deleted successfully',
     })
   } catch (err: any) {
-    console.error('Video deletion error:', err)
+    console.error('Video deletion error:', err?.message || 'unknown error')
     return errorResponse(err?.message || 'Server error', 500)
   }
 }

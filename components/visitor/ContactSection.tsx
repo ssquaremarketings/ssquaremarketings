@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { supabase } from '@/lib/supabase'
 import { Toast } from '@/components/ui/Toast'
 
 export function ContactSection() {
@@ -47,16 +46,21 @@ export function ContactSection() {
     }
 
     setLoading(true)
-    const { error } = await supabase.from('leads').insert({
-      name: name.trim(),
-      phone: phone.trim(),
-      budget: subject,
-      property: 'General Inquiry',
-      message: `Email: ${email.trim()}\n\n${message.trim()}`
+    const response = await fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        subject,
+        message: message.trim(),
+      }),
     })
+    const result = await response.json().catch(() => null)
     setLoading(false)
 
-    if (error) {
+    if (!response.ok || !result?.success) {
       setToast({ message: 'Message could not be sent.', type: 'error' })
       return
     }
