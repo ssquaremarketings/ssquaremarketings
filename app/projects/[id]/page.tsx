@@ -55,7 +55,8 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const contactPhone = process.env.NEXT_PUBLIC_CONTACT_PHONE ?? '+91-XXXXXXXXXX'
   const telHref = `tel:${contactPhone}`
-  const waHref = `https://wa.me/${contactPhone.replace(/\D/g, '')}`
+  const waMessage = `Hi, I'm interested in ${project.name}. Could you please provide more details and pricing information?`
+  const waHref = `https://wa.me/${contactPhone.replace(/\D/g, '')}?text=${encodeURIComponent(waMessage)}`
 
   const { data: reviews } = await supabase
     .from('reviews')
