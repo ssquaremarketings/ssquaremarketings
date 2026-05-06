@@ -11,6 +11,8 @@ import { uploadToCloudinary } from '@/lib/cloudinary'
 import { FileUpload } from '@/components/ui/FileUpload'
 import { Toast } from '@/components/ui/Toast'
 import MuxPlayer from '@mux/mux-player-react'
+import Image from 'next/image'
+import { projectCreateSchema, projectUpdateSchema } from '@/lib/validation'
 
 type ProjectFormProps = {
   isEditing?: boolean
@@ -36,6 +38,7 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
   const [muxAssetId, setMuxAssetId] = useState(project?.mux_asset_id ?? null)
   const [muxPlaybackId, setMuxPlaybackId] = useState(project?.mux_playback_id ?? null)
   const [videoStatus, setVideoStatus] = useState(project?.video_status ?? 'none')
+  const [removingVideo, setRemovingVideo] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [images, setImages] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
@@ -44,45 +47,64 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [brochureName, setBrochureName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [pendingSaveAfterUpload, setPendingSaveAfterUpload] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   // Multiple image upload handler
   async function handleMultipleUpload(e: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
+    if (files.length > 10) {
+      setToast({ message: 'You can upload up to 10 images at a time.', type: 'error' })
+      return
+    }
+
     setUploading(true)
     const uploadedUrls: string[] = []
-    for (const file of files) {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!)
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: 'POST', body: formData }
-      )
-      const data = await res.json()
-      if (data.secure_url) uploadedUrls.push(data.secure_url)
+
+    try {
+      for (const file of files) {
+        const url = await uploadToCloudinary(file, 'project-images')
+        uploadedUrls.push(url)
+      }
+      setImages((prev) => [...prev, ...uploadedUrls])
+    } catch (error: any) {
+      setToast({ message: error?.message || 'Image upload failed.', type: 'error' })
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
-    setImages((prev) => [...prev, ...uploadedUrls])
-    setUploading(false)
-    // Reset input value so same file can be uploaded again if needed
-    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   // Remove video handler (must be inside component and before return)
   async function removeVideo() {
-    if (!project) return;
-    await fetch(`/api/projects/${project.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mux_playback_id: null,
-        mux_asset_id: null
+    if (!project?.id) {
+      setToast({ message: 'Project ID missing', type: 'error' })
+      return
+    }
+
+    setRemovingVideo(true)
+
+    try {
+      const res = await fetch(`/api/projects/${project.id}/video`, {
+        method: 'DELETE',
       })
-    });
-    setMuxPlaybackId(null);
-    setMuxAssetId(null);
-    setVideoStatus('none');
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Failed to delete video')
+      }
+
+      setMuxPlaybackId(null)
+      setMuxAssetId(null)
+      setVideoStatus('none')
+      setToast({ message: 'Video deleted successfully', type: 'success' })
+    } catch (error: any) {
+      setToast({ message: error.message || 'Failed to delete video', type: 'error' })
+    } finally {
+      setRemovingVideo(false)
+    }
   }
 
   useEffect(() => {
@@ -110,7 +132,6 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
     } else {
       setImages([])
     }
-    console.log("Project from DB image_urls:", project.image_urls);
   }, [project])
 
   useEffect(() => {
@@ -118,6 +139,13 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
     const timer = setTimeout(() => setToast(null), 2500)
     return () => clearTimeout(timer)
   }, [toast])
+
+  useEffect(() => {
+    if (uploading || !pendingSaveAfterUpload || loading) return
+
+    setPendingSaveAfterUpload(false)
+    void persistProject()
+  }, [uploading, pendingSaveAfterUpload, loading])
 
   const canSubmit = useMemo(() => form.name.trim() && form.location.trim() && form.price.trim() && form.type, [form])
 
@@ -135,9 +163,7 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
     setBrochureName(file.name)
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
+  async function persistProject() {
     if (!canSubmit) {
       setToast({ message: 'Please fill the required fields.', type: 'error' })
       return
@@ -158,59 +184,70 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
       }
 
 
-      const payload: any = {
+      const payload = {
         name: sanitize(form.name.trim()),
         tag: form.tag,
         type: form.type,
-        location: form.location.trim(),
-        price: form.price.trim(),
-        price_per_sqyd: form.price_per_sqyd.trim() || null,
-        area: form.area.trim() || null,
-        description: form.description.trim() || null,
+        location: sanitize(form.location.trim()),
+        price: sanitize(form.price.trim()),
+        price_per_sqyd: sanitize(form.price_per_sqyd.trim()) || null,
+        area: sanitize(form.area.trim()) || null,
+        description: sanitize(form.description.trim()) || null,
         image_url: imageUrl || null,
         image_urls: images,
         brochure_url: brochureUrl || null,
         published: form.published,
-        updated_at: new Date().toISOString(),
-        video_status: videoStatus,
+        mux_asset_id: muxAssetId,
+        mux_playback_id: muxPlaybackId,
       }
-      if (muxAssetId) payload.mux_asset_id = muxAssetId;
-      if (muxPlaybackId) payload.mux_playback_id = muxPlaybackId;
 
+      // Validate with appropriate schema
+      const validated = isEditing 
+        ? projectUpdateSchema.parse(payload)
+        : projectCreateSchema.parse(payload)
 
       if (isEditing && project) {
-        // Update via Next.js API route
         const res = await fetch(`/api/projects/${project.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+          body: JSON.stringify(validated),
+        })
         if (!res.ok) {
-          const text = await res.text();
-          console.error('Update failed:', text);
-          throw new Error('Project update failed');
+          const errData = await res.json()
+          throw new Error(errData.error || 'Project update failed')
         }
       } else {
-        // Insert via Supabase (if allowed by RLS, otherwise migrate to API route)
         const res = await fetch('/api/projects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+          body: JSON.stringify(validated),
+        })
         if (!res.ok) {
-          const text = await res.text();
-          console.error('Insert failed:', text);
-          throw new Error('Project insert failed');
+          const errData = await res.json()
+          throw new Error(errData.error || 'Project insert failed')
         }
       }
 
       setToast({ message: 'Project saved successfully.', type: 'success' })
       setTimeout(() => router.push('/admin/projects'), 700)
-    } catch (error) {
-      setToast({ message: 'Unable to save project.', type: 'error' })
+    } catch (error: any) {
+      console.error('Save error:', error)
+      setToast({ message: error?.message || 'Unable to save project.', type: 'error' })
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (uploading) {
+      setPendingSaveAfterUpload(true)
+      setToast({ message: 'Image upload in progress. Saving will continue automatically when it finishes.', type: 'error' })
+      return
+    }
+
+    await persistProject()
   }
 
   return (
@@ -279,8 +316,17 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
               {images.length > 0 && (
                 <div className="flex gap-2 flex-wrap mt-3">
                   {images.map((url, i) => (
-                    <div key={i} className="relative">
-                      <img src={url} className="w-24 h-24 object-cover rounded" loading="lazy" />
+                    <div key={i} className="relative h-24 w-24 overflow-hidden rounded">
+                      <Image 
+                        src={url} 
+                        alt="Project image preview" 
+                        fill 
+                        className="object-cover" 
+                        sizes="96px"
+                        onError={(event) => {
+                          (event.currentTarget as HTMLImageElement).src = '/placeholder-project.svg'
+                        }}
+                      />
                       <button
                         type="button"
                         onClick={() => setImages(images.filter((_, index) => index !== i))}
@@ -317,15 +363,19 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
             Project Video Tour
           </label>
           {muxPlaybackId ? (
-            <div className="mb-2">
+            <div className="border rounded-xl overflow-hidden">
               <MuxPlayer playbackId={muxPlaybackId} style={{ width: '100%', aspectRatio: '16/9' }} />
-              <button
-                type="button"
-                onClick={removeVideo}
-                className="mt-2 px-3 py-1 rounded bg-red-500 text-white text-xs"
-              >
-                Remove Video
-              </button>
+              <div className="p-3 bg-gray-50 flex gap-3">
+                <button
+                  type="button"
+                  onClick={removeVideo}
+                  disabled={removingVideo}
+                  className="text-sm text-red-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  {removingVideo && <span className="animate-spin">⏳</span>}
+                  {removingVideo ? 'Removing...' : 'Remove Video'}
+                </button>
+              </div>
             </div>
           ) : isEditing && project?.id ? (
             <VideoUpload
@@ -355,8 +405,8 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
           <span className="text-sm font-medium text-slate-700">Published</span>
         </label>
 
-        <button type="submit" disabled={loading} className="inline-flex rounded-full bg-amber-500 px-6 py-3 font-semibold text-primary disabled:opacity-60" suppressHydrationWarning>
-          {loading ? 'Saving...' : isEditing ? 'Update Project' : 'Save Project'}
+        <button type="submit" disabled={loading || uploading} className="inline-flex rounded-full bg-amber-500 px-6 py-3 font-semibold text-primary disabled:opacity-60" suppressHydrationWarning>
+          {loading ? 'Saving...' : uploading ? 'Waiting for image upload...' : isEditing ? 'Update Project' : 'Save Project'}
         </button>
       </form>
     </div>

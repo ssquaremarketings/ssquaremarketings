@@ -44,10 +44,10 @@ export default function VideoUpload({
 
       const res = await fetch('/api/mux/upload-url', { method: 'POST' })
       if (!res.ok) throw new Error('Could not get upload URL')
-      const data = await res.json()
-      const { uploadId, uploadUrl } = data
+      const response = await res.json()
+      const { uploadId, uploadUrl } = response.data
       if (!uploadId || !uploadUrl) {
-        console.error('Invalid Mux response:', data)
+        console.error('Invalid Mux response:', response)
         throw new Error('Upload URL missing')
       }
       setCurrentUploadId(uploadId)
@@ -72,8 +72,10 @@ export default function VideoUpload({
       timerRef.current = setInterval(() => setProcessingSeconds((s) => s + 1), 1000)
 
       pollingRef.current = setInterval(async () => {
-        const poll = await fetch(`/api/mux/asset-status?uploadId=${uploadId}`).then((r) => r.json())
-        if (poll.status === 'ready' && poll.playbackId) {
+        const pollRes = await fetch(`/api/mux/asset-status?uploadId=${uploadId}`)
+        const pollJson = await pollRes.json()
+        const poll = pollJson.data
+        if (poll?.status === 'ready' && poll?.playbackId) {
           clearInterval(pollingRef.current!)
           clearInterval(timerRef.current!)
           setCurrentPlaybackId(poll.playbackId)
@@ -106,7 +108,7 @@ export default function VideoUpload({
           }
 
           onVideoReady(poll.assetId, poll.playbackId)
-        } else if (poll.status === 'errored') {
+        } else if (poll?.status === 'errored') {
           clearInterval(pollingRef.current!)
           clearInterval(timerRef.current!)
           setStage('error')
@@ -144,17 +146,41 @@ export default function VideoUpload({
     }
   }
 
+  const [isRemoving, setIsRemoving] = useState(false)
+
   async function handleRemove() {
-    if (!currentAssetId) return
-    await fetch('/api/mux/delete', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assetId: currentAssetId }),
-    })
-    setCurrentPlaybackId(null)
-    setCurrentAssetId(null)
-    setStage('idle')
-    onVideoRemoved()
+    if (!projectId) {
+      setErrorMessage('Project ID missing. Cannot delete video.')
+      return
+    }
+
+    if (!currentAssetId && !currentPlaybackId) {
+      return
+    }
+
+    setIsRemoving(true)
+    setErrorMessage(null)
+
+    try {
+      const res = await fetch(`/api/projects/${projectId}/video`, {
+        method: 'DELETE',
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Failed to delete video')
+      }
+
+      setCurrentPlaybackId(null)
+      setCurrentAssetId(null)
+      setStage('idle')
+      onVideoRemoved()
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to delete video')
+    } finally {
+      setIsRemoving(false)
+    }
   }
 
   // --- RENDER ---
@@ -231,18 +257,22 @@ export default function VideoUpload({
         <button
           type="button"
           onClick={handleRemove}
-          className="text-sm text-red-600 hover:underline"
+          disabled={isRemoving}
+          className="text-sm text-red-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
         >
-          Remove video
+          {isRemoving && <span className="animate-spin">⏳</span>}
+          {isRemoving ? 'Removing...' : 'Remove video'}
         </button>
         <button
           type="button"
           onClick={() => { setStage('idle'); setCurrentPlaybackId(null); setCurrentAssetId(null); onVideoRemoved() }}
-          className="text-sm text-gray-600 hover:underline"
+          disabled={isRemoving}
+          className="text-sm text-gray-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Replace video
         </button>
       </div>
+      {errorMessage && <p className="text-red-600 text-sm mt-2 px-3">{errorMessage}</p>}
     </div>
   )
 

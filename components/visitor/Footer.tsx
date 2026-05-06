@@ -1,9 +1,11 @@
+import Image from 'next/image'
+
 export function Footer() {
   return (
     <footer className="border-t border-slate-200 bg-primary text-white">
       <div className="container-shell grid gap-8 py-12 md:grid-cols-3">
         <div className="flex flex-col items-start">
-          <img src="/branding.png" alt="S-Square Marketings Logo" className="h-10 w-auto mb-3" loading="lazy" />
+          <Image src="/branding.png" alt="S-Square Marketings Logo" width={160} height={40} className="h-10 w-auto mb-3" />
           <p className="mt-3 text-sm text-slate-200">Premium open plots for secure and smart land investment.</p>
         </div>
         <div>
@@ -18,9 +20,9 @@ export function Footer() {
         <div>
           <h3 className="text-lg font-bold text-amber-300">Contact Info</h3>
           <ul className="mt-3 grid gap-2 text-sm text-slate-200">
-            <li>+91-XXXXXXXXXX</li>
-            <li>info@sreeinfra.com</li>
-            <li>Proddatur, Andhra Pradesh</li>
+            <li>{process.env.NEXT_PUBLIC_CONTACT_PHONE ?? '+91-XXXXXXXXXX'}</li>
+            <li>ssquremarketing@gmail.com</li>
+            <li>Municipal park road, 22/217, Gandhi Rd, opp. Rotary EYE Hospital, beside SBI Main branch, Rameswaram, Proddatur, Andhra Pradesh 516360</li>
           </ul>
         </div>
       </div>

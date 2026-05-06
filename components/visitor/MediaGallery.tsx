@@ -1,21 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import MuxPlayer from "@mux/mux-player-react";
+import Image from 'next/image'
 
 export default function MediaGallery({ project }: any) {
-  const media = [
+  type MediaItem = { type: 'video'; id: string } | { type: 'image'; url: string };
+  const media = useMemo<MediaItem[]>(() => [
     ...(project?.mux_playback_id
-      ? [{ type: "video", id: project.mux_playback_id }]
+      ? [{ type: 'video', id: project.mux_playback_id }]
       : []),
     ...(Array.isArray(project?.image_urls) && project.image_urls.length
-      ? project.image_urls.map((url: string) => ({ type: "image", url }))
+      ? project.image_urls.map((url: string) => ({ type: 'image', url }))
       : project?.image_url
-        ? [{ type: "image", url: project.image_url }]
+        ? [{ type: 'image', url: project.image_url }]
         : []),
-  ];
+  ], [project?.mux_playback_id, project?.image_url, project?.image_urls])
 
-  type MediaItem = { type: 'video'; id: string } | { type: 'image'; url: string };
   const [activeMedia, setActiveMedia] = useState<MediaItem | null>(null);
   const [videoError, setVideoError] = useState(false);
 
@@ -23,7 +24,7 @@ export default function MediaGallery({ project }: any) {
     if (media.length > 0) {
       setActiveMedia(media[0]);
     }
-  }, [media.length]);
+  }, [media]);
 
   useEffect(() => {
     setVideoError(false);
@@ -32,15 +33,32 @@ export default function MediaGallery({ project }: any) {
   if (!media.length) return null;
   if (!activeMedia) return null;
 
+  const fallbackImage = media.find((item) => item.type === 'image')
+
   return (
     <div>
       {/* MAIN MEDIA */}
       <div className="w-full rounded-xl overflow-hidden mb-4">
         {activeMedia.type === "video" ? (
           videoError ? (
-            <div className="w-full aspect-video flex items-center justify-center bg-gray-100 text-gray-500">
-              No video available
-            </div>
+            fallbackImage && fallbackImage.type === "image" ? (
+              <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-100">
+                <Image 
+                  src={fallbackImage.url} 
+                  alt="project" 
+                  fill 
+                  className="object-contain" 
+                  sizes="100vw"
+                  onError={(event) => {
+                    (event.currentTarget as HTMLImageElement).src = '/placeholder-project.svg'
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="w-full aspect-video flex items-center justify-center bg-gray-100 text-gray-500">
+                Video is no longer available
+              </div>
+            )
           ) : (
             <MuxPlayer
               playbackId={activeMedia.id}
@@ -49,11 +67,18 @@ export default function MediaGallery({ project }: any) {
             />
           )
         ) : (
-          <img
-            src={activeMedia.url}
-            alt="project"
-            className="w-full h-auto object-contain rounded-xl"
-          />
+          <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-100">
+            <Image
+              src={activeMedia.url}
+              alt="project"
+              fill
+              className="object-contain"
+              sizes="100vw"
+              onError={(event) => {
+                (event.currentTarget as HTMLImageElement).src = '/placeholder-project.svg'
+              }}
+            />
+          </div>
         )}
       </div>
 
@@ -79,11 +104,18 @@ export default function MediaGallery({ project }: any) {
                   🎥
                 </div>
               ) : (
-                <img
-                  src={item.url}
-                  alt="thumb"
-                  className="w-full h-full object-cover"
-                />
+                <div className="relative h-full w-full">
+                  <Image
+                    src={item.url}
+                    alt="thumb"
+                    fill
+                    className="object-cover"
+                    onError={(event) => {
+                      (event.currentTarget as HTMLImageElement).src = '/placeholder-project.svg'
+                    }}
+                    sizes="96px"
+                  />
+                </div>
               )}
             </div>
           );

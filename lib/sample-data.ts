@@ -7,6 +7,7 @@ export const SAMPLE_PROJECTS: ProjectInsert[] = [
   {
     name: 'Jagathi Homes',
     tag: 'available',
+    type: 'open-plots',
     location: 'Uppagu, Pottipadu Road, Proddatur',
     price: 'Rs18 Lakhs onwards',
     price_per_sqyd: 'Rs4,500/sq.yd',
@@ -19,6 +20,7 @@ export const SAMPLE_PROJECTS: ProjectInsert[] = [
   {
     name: 'Vivanta Enclave',
     tag: 'featured',
+    type: 'open-plots',
     location: 'Proddatur, Kadapa District',
     price: 'Rs22 Lakhs onwards',
     price_per_sqyd: 'Rs5,200/sq.yd',
@@ -31,6 +33,7 @@ export const SAMPLE_PROJECTS: ProjectInsert[] = [
   {
     name: 'CMR Rainbow',
     tag: 'hot-deal',
+    type: 'open-plots',
     location: 'Chennamraju Palle, Proddatur-Duvvur Highway',
     price: 'Rs12 Lakhs onwards',
     price_per_sqyd: 'Rs3,200/sq.yd',
@@ -43,6 +46,7 @@ export const SAMPLE_PROJECTS: ProjectInsert[] = [
   {
     name: 'Mudra Valley',
     tag: 'hot-deal',
+    type: 'open-plots',
     location: 'Beside Chandamama Venture, Proddatur',
     price: 'Rs10 Lakhs onwards',
     price_per_sqyd: 'Rs2,900/sq.yd',

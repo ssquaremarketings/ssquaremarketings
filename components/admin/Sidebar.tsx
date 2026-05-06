@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import Image from 'next/image'
 
 const navItems = [
   { label: 'Dashboard', href: '/admin/dashboard' },
@@ -24,7 +25,7 @@ export function Sidebar() {
   return (
     <aside className="flex min-h-screen w-64 flex-col bg-primary px-5 py-6 text-white">
       <div className="flex flex-col items-start">
-        <img src="/branding.png" alt="S-Square Marketings Logo" className="h-10 w-auto mb-2" loading="lazy" />
+        <Image src="/branding.png" alt="S-Square Marketings Logo" width={160} height={40} className="h-10 w-auto mb-2" />
         <p className="mt-1 text-sm text-white/70">Admin CMS</p>
       </div>
 

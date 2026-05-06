@@ -1,4 +1,7 @@
 import Mux from '@mux/mux-node'
+import { errorResponse, successResponse } from '@/lib/api-response'
+import { requireAdminSession } from '@/lib/auth'
+import { uploadIdSchema } from '@/lib/validation'
 
 export const runtime = 'nodejs';
 
@@ -12,12 +15,25 @@ export async function GET(request: Request) {
   const uploadId = searchParams.get('uploadId');
 
   if (!uploadId) {
-    return Response.json({ error: 'Missing uploadId' }, { status: 400 });
+    return errorResponse('Missing uploadId', 400)
   }
 
   try {
+    const { session, authorized } = await requireAdminSession()
+
+    if (!session) {
+      return errorResponse('Unauthorized', 401)
+    }
+
+    if (!authorized) {
+      return errorResponse('Forbidden', 403)
+    }
+
+    if (!uploadIdSchema.safeParse(uploadId).success) {
+      return errorResponse('Invalid uploadId', 400)
+    }
+
     const upload = await mux.video.uploads.retrieve(uploadId);
-    // Optional: log for debugging
 
     let assetId = upload.asset_id ?? null;
     let playbackId = null;
@@ -30,13 +46,12 @@ export async function GET(request: Request) {
       playbackId = asset.playback_ids?.[0]?.id ?? null;
     }
 
-    return Response.json({
+    return successResponse({
       status,
       assetId,
       playbackId,
-    });
+    })
   } catch (error: any) {
-    console.error('Mux asset-status error:', error);
-    return Response.json({ error: error.message || 'Mux error' }, { status: 500 });
+    return errorResponse(error.message || 'Mux error', 500)
   }
 }

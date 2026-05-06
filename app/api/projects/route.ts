@@ -1,29 +1,59 @@
-import { createSupabaseServerClient } from '@/lib/supabase-server';
-import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js'
+import { errorResponse, successResponse } from '@/lib/api-response'
+import { requireAdminSession } from '@/lib/auth'
+import { projectCreateSchema } from '@/lib/validation'
+
+function stripOptionalProjectFields(payload: Record<string, unknown>) {
+  const { image_urls, video_status, ...rest } = payload
+  return rest
+}
 
 export async function POST(req: Request) {
   try {
-    const supabase = createSupabaseServerClient();
-    const body = await req.json();
-    const { data, error } = await supabase.from('projects').insert([body]).select().single();
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    const { session, authorized } = await requireAdminSession()
+
+    if (!session) {
+      return errorResponse('Unauthorized', 401)
     }
-    return NextResponse.json({ project: data }, { status: 201 });
+
+    if (!authorized) {
+      return errorResponse('Forbidden', 403)
+    }
+
+    const body = projectCreateSchema.parse(await req.json())
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    let { data, error } = await supabase.from('projects').insert([body]).select().single()
+
+    if (error && /image_urls|video_status|column .* does not exist/i.test(error.message)) {
+      ;({ data, error } = await supabase.from('projects').insert([stripOptionalProjectFields(body)]).select().single())
+    }
+
+    if (error) {
+      return errorResponse(error.message, 400)
+    }
+    return successResponse({ project: data }, 201)
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Unknown error' }, { status: 500 });
+    if (err?.name === 'ZodError') {
+      return errorResponse(err.issues?.[0]?.message || 'Invalid project payload', 400)
+    }
+    return errorResponse(err?.message || 'Unknown error', 500)
   }
 }
 
 export async function GET() {
   try {
-    const supabase = createSupabaseServerClient();
-    const { data, error } = await supabase.from('projects').select('*');
+    const { supabase, session, authorized } = await requireAdminSession()
+    const query = supabase.from('projects').select('*').order('created_at', { ascending: false })
+    const { data, error } = session && authorized ? await query : await query.eq('published', true)
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return errorResponse(error.message, 400)
     }
-    return NextResponse.json({ projects: data }, { status: 200 });
+    return successResponse({ projects: data }, 200)
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Unknown error' }, { status: 500 });
+    return errorResponse(err?.message || 'Unknown error', 500)
   }
 }

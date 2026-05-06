@@ -7,21 +7,56 @@ import { PROJECT_TYPES } from '@/lib/types'
 import StarRating from '@/components/visitor/StarRating'
 import ReviewCard from '@/components/visitor/ReviewCard'
 import ReviewForm from '@/components/visitor/ReviewForm'
+import type { Metadata } from 'next'
+import Script from 'next/script'
 
-export default async function ProjectDetailPage({ params }: { params: { id: string } }) {
+async function getProject(id: string) {
   const supabase = createSupabaseServerClient()
-
-  // Fetch project
   const { data: project } = await supabase
     .from('projects')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('published', true)
     .single()
 
+  return project
+}
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const project = await getProject(params.id)
+
+  if (!project) {
+    return { title: 'Project Not Found' }
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+  return {
+    title: project.name,
+    description: project.description || `${project.name} in ${project.location}`,
+    alternates: {
+      canonical: `/projects/${project.id}`
+    },
+    openGraph: {
+      title: project.name,
+      description: project.description || `${project.name} in ${project.location}`,
+      url: `${baseUrl}/projects/${project.id}`,
+      images: project.image_url ? [{ url: project.image_url, width: 1200, height: 630, alt: project.name }] : []
+    }
+  }
+}
+
+export default async function ProjectDetailPage({ params }: { params: { id: string } }) {
+  const project = await getProject(params.id)
+
   if (!project) return notFound()
 
-  // Fetch reviews
+  const supabase = createSupabaseServerClient()
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const contactPhone = process.env.NEXT_PUBLIC_CONTACT_PHONE ?? '+91-XXXXXXXXXX'
+  const telHref = `tel:${contactPhone}`
+  const waHref = `https://wa.me/${contactPhone.replace(/\D/g, '')}`
+
   const { data: reviews } = await supabase
     .from('reviews')
     .select('*')
@@ -37,6 +72,36 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
 
   return (
     <main className="max-w-5xl mx-auto py-8 px-4">
+      <Script id="project-breadcrumb-schema" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: baseUrl },
+            { '@type': 'ListItem', position: 2, name: 'Projects', item: `${baseUrl}/#projects` },
+            { '@type': 'ListItem', position: 3, name: project.name, item: `${baseUrl}/projects/${project.id}` }
+          ]
+        })}
+      </Script>
+      <Script id="project-listing-schema" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'RealEstateListing',
+          name: project.name,
+          description: project.description || `${project.name} in ${project.location}`,
+          url: `${baseUrl}/projects/${project.id}`,
+          image: project.image_url ? [project.image_url] : [],
+          address: {
+            '@type': 'PostalAddress',
+            addressLocality: project.location
+          },
+          offers: {
+            '@type': 'Offer',
+            price: project.price,
+            priceCurrency: 'INR'
+          }
+        })}
+      </Script>
       <a
         href="/"
         className="inline-block mb-6 px-5 py-2 rounded-xl bg-[#1a3c5e] text-white font-semibold hover:bg-[#163251] transition-colors shadow"
@@ -56,7 +121,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
           </section>
 
           {/* Video Tour */}
-          {project.mux_playback_id && project.video_status === 'ready' && (
+          {project.mux_playback_id && (
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-[#1a3c5e] mb-4">Video Tour</h2>
               <div className="rounded-2xl overflow-hidden shadow-lg">
@@ -106,10 +171,10 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
                 Enquire Now
               </button>
             </EnquiryModal>
-            <a href={`tel:1234567890`} className="block w-full text-center py-2 rounded-xl border border-[#1a3c5e] text-[#1a3c5e] text-sm font-medium hover:bg-[#1a3c5e] hover:text-white transition-colors mb-2">
+            <a href={telHref} className="block w-full text-center py-2 rounded-xl border border-[#1a3c5e] text-[#1a3c5e] text-sm font-medium hover:bg-[#1a3c5e] hover:text-white transition-colors mb-2">
               Call
             </a>
-            <a href={`https://wa.me/1234567890`} target="_blank" rel="noopener noreferrer" className="block w-full text-center py-2 rounded-xl border border-green-600 text-green-700 text-sm font-medium hover:bg-green-600 hover:text-white transition-colors">
+            <a href={waHref} target="_blank" rel="noopener noreferrer" className="block w-full text-center py-2 rounded-xl border border-green-600 text-green-700 text-sm font-medium hover:bg-green-600 hover:text-white transition-colors">
               WhatsApp
             </a>
           </div>

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 
 const links = [
   { label: 'Home', href: '#home' },
@@ -27,7 +28,7 @@ export function Navbar() {
     <header className={`fixed inset-x-0 top-0 z-50 transition-all ${scrolled ? 'bg-white/95 shadow-sm backdrop-blur' : 'bg-transparent'}`}>
       <div className="container-shell flex h-20 items-center justify-between gap-4">
         <Link href="#home" className="flex items-center gap-2">
-          <img src="/branding.png" alt="S-Square Marketings Logo" className="h-10 w-auto" loading="lazy" />
+          <Image src="/branding.png" alt="S-Square Marketings Logo" width={160} height={40} className="h-10 w-auto" />
         </Link>
 
         <button

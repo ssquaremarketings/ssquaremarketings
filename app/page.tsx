@@ -9,6 +9,7 @@ import { ValuesSection } from '@/components/visitor/ValuesSection'
 import { TestimonialsSection } from '@/components/visitor/TestimonialsSection'
 import { ContactSection } from '@/components/visitor/ContactSection'
 import { Footer } from '@/components/visitor/Footer'
+import Script from 'next/script'
 
 export const revalidate = 60
 
@@ -43,9 +44,20 @@ async function getProjects(): Promise<Project[]> {
 
 export default async function HomePage() {
   const projects = await getProjects()
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'S-Square Marketings',
+    url: baseUrl,
+    logo: `${baseUrl}/branding.png`
+  }
 
   return (
     <main>
+      <Script id="organization-schema" type="application/ld+json" strategy="afterInteractive">
+        {JSON.stringify(structuredData)}
+      </Script>
       <Navbar />
       <HeroSection />
       <AboutSection />

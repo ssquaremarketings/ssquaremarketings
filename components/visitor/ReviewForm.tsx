@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { sanitize } from '@/utils/sanitize'
 import { supabase } from '@/lib/supabase'
 import StarRating from './StarRating'
+import { reviewSchema } from '@/lib/validation'
 
 interface Props {
   projectId?: string
@@ -24,6 +25,15 @@ export default function ReviewForm({ projectId, projectName }: Props) {
     if (!name.trim() || name.trim().length < 2) e.name = 'Name must be at least 2 characters'
     if (rating === 0) e.rating = 'Please select a rating'
     if (reviewText.trim().length < 20) e.reviewText = 'Review must be at least 20 characters'
+    const parsed = reviewSchema.safeParse({
+      reviewer_name: name,
+      phone: phone || null,
+      property: property || null,
+      project_id: projectId ?? null,
+      rating,
+      review_text: reviewText,
+    })
+    if (!parsed.success) e.form = parsed.error.issues[0]?.message || 'Invalid review data'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -51,7 +61,6 @@ export default function ReviewForm({ projectId, projectName }: Props) {
       <div className="text-3xl mb-2">🙏</div>
       <p className="font-semibold text-green-800">Thank you for your review!</p>
       <p className="text-sm text-green-700 mt-1">
-        It will appear on the site after admin approval.
       </p>
     </div>
   )
@@ -59,6 +68,7 @@ export default function ReviewForm({ projectId, projectName }: Props) {
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-6 space-y-4">
       <h3 className="text-lg font-bold text-[#1a3c5e]">Write a Review</h3>
+      {errors.form ? <p className="text-sm text-red-600">{errors.form}</p> : null}
 
       {/* Name */}
       <div>

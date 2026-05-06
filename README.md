@@ -92,6 +92,14 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=xxxx
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=xxxx
 NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=xxxx
+NEXT_PUBLIC_CONTACT_PHONE=+91-XXXXXXXXXX
+
+Add your contact phone number to `NEXT_PUBLIC_CONTACT_PHONE` so the site uses it in the visitor contact cards and footer. Example:
+
+```env
+# .env.local
+NEXT_PUBLIC_CONTACT_PHONE=+919812345678
+```
 ```
 
 ## Run Locally

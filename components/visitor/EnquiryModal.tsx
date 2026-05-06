@@ -5,6 +5,7 @@ import type { Project } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import { sanitize } from "@/utils/sanitize";
 import { Toast } from "@/components/ui/Toast";
+import { enquirySchema } from '@/lib/validation'
 
 type Props = {
   project: Project | null;
@@ -50,10 +51,20 @@ export default function EnquiryModal({ project, isOpen, onClose, children }: Pro
   }, [open]);
 
   function validate() {
-    if (name.trim().length < 3) return "Name is required.";
-    if (!/^[0-9]{10}$/.test(phone.trim()))
-      return "Phone must be exactly 10 digits.";
-    if (!budget) return "Budget is required.";
+    if (!project) return 'Project not available'
+    
+    const parsed = enquirySchema.safeParse({
+      name,
+      phone,
+      budget,
+      message,
+      property: project.name,
+    })
+
+    if (!parsed.success) {
+      return parsed.error.issues[0]?.message || 'Please check the form inputs.'
+    }
+
     return "";
   }
 
@@ -74,7 +85,7 @@ export default function EnquiryModal({ project, isOpen, onClose, children }: Pro
       name: sanitize(name.trim()),
       phone: phone.trim(),
       budget,
-      property: project.name,
+      property: sanitize(project.name),
       message: sanitize(message.trim()),
     });
 
@@ -110,7 +121,7 @@ export default function EnquiryModal({ project, isOpen, onClose, children }: Pro
 
       {/* Modal */}
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-label={`Enquire about ${project.name}`}>
           {toast && <Toast message={toast.message} type={toast.type} />}
 
           <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
@@ -132,6 +143,7 @@ export default function EnquiryModal({ project, isOpen, onClose, children }: Pro
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <input
+                type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Full Name"
@@ -139,6 +151,7 @@ export default function EnquiryModal({ project, isOpen, onClose, children }: Pro
               />
 
               <input
+                type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Phone"

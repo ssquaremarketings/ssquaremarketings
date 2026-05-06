@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import type { Project } from '@/lib/types'
 import MuxPlayer from '@mux/mux-player-react'
+import Image from 'next/image'
 
 async function getProject(id: string): Promise<Project | null> {
   const supabase = createSupabaseServerClient()
@@ -29,12 +30,15 @@ export default async function ProjectDetailsPage({ params }: { params: { id: str
           style={{ width: '100%', aspectRatio: '16/9' }}
         />
       ) : project.image_url ? (
-        <img
-          src={project.image_url}
-          alt={project.name}
-          className="w-full rounded-xl border object-cover"
-          style={{ aspectRatio: '16/9' }}
-        />
+        <div className="relative w-full overflow-hidden rounded-xl border aspect-video">
+          <Image
+            src={project.image_url}
+            alt={project.name}
+            fill
+            className="object-cover"
+            sizes="100vw"
+          />
+        </div>
       ) : (
         <div className="w-full aspect-[16/9] bg-slate-100 flex items-center justify-center rounded-xl border text-slate-400">
           No video or image available

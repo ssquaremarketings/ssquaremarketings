@@ -1,6 +1,7 @@
 'use client'
 
 import { ChangeEvent } from 'react'
+import Image from 'next/image'
 
 type FileUploadProps = {
   label: string
@@ -21,7 +22,11 @@ export function FileUpload({ label, accept, onChange, previewUrl, fileName, help
         <input type="file" accept={accept} onChange={onChange} className="hidden" />
       </label>
       {fileName ? <p className="mt-2 text-sm text-slate-600">Selected: {fileName}</p> : null}
-      {previewUrl ? <img src={previewUrl} loading="lazy" alt={`${label} preview`} className="mt-3 h-48 w-full rounded-2xl object-cover" /> : null}
+      {previewUrl ? (
+        <div className="relative mt-3 h-48 w-full overflow-hidden rounded-2xl">
+          <Image src={previewUrl} alt={`${label} preview`} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" unoptimized />
+        </div>
+      ) : null}
     </div>
   )
 }

@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { Toast } from '@/components/ui/Toast'
 
 export function ContactSection() {
+  const contactPhone = process.env.NEXT_PUBLIC_CONTACT_PHONE ?? '+91-XXXXXXXXXX'
+
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -12,6 +14,8 @@ export function ContactSection() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+
+  const whatsappHref = `https://wa.me/${contactPhone.replace(/\D/g, '')}`
 
   useEffect(() => {
     if (!toast) return
@@ -72,19 +76,23 @@ export function ContactSection() {
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-500">Contact</p>
           <h2 className="mt-3 text-3xl font-bold text-primary sm:text-4xl">Get In Touch</h2>
-          <p className="mt-4 text-slate-600">Proddatur, YSR Kadapa District, Andhra Pradesh</p>
+          <p className="mt-4 text-slate-600">
+            <a href="https://share.google/g9bkqXVXmZ9FeVokL" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-500">
+              Municipal park road, 22/217, Gandhi Rd, opp. Rotary EYE Hospital, beside SBI Main branch, Rameswaram, Proddatur, Andhra Pradesh 516360
+            </a>
+          </p>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             {[
-              ['Call', '+91-XXXXXXXXXX', 'tel:+91XXXXXXXXXX'],
-              ['WhatsApp', 'Quick chat support', 'https://wa.me/91XXXXXXXXXX'],
-              ['Email', 'info@sreeinfra.com', 'mailto:info@sreeinfra.com'],
-              ['Instagram', 'Follow project updates', 'https://instagram.com']
+              ['Call', contactPhone, `tel:${contactPhone}`],
+              ['WhatsApp', 'Quick chat support', whatsappHref],
+              ['Email', 'ssquremarketing@gmail.com', 'mailto:ssquremarketing@gmail.com'],
+              ['Instagram', 'Follow project updates', 'https://www.instagram.com/ssquare_pdtr/']
             ].map(([title, detail, href]) => (
-              <article key={title} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+              <article key={String(title)} className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
                 <h3 className="font-bold text-primary">{title}</h3>
                 <p className="mt-2 text-sm text-slate-600">{detail}</p>
-                <a href={href} className="mt-4 inline-flex rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-primary">
+                <a href={String(href)} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-primary">
                   Open
                 </a>
               </article>

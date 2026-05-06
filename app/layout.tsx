@@ -9,21 +9,35 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: "S-Square Marketings",
-  description: "Find your dream property",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  title: {
+    default: 'S-Square Marketings',
+    template: '%s | S-Square Marketings'
+  },
+  description: 'Find your dream property with S-Square Marketings.',
+  keywords: ['real estate', 'properties', 'open plots', 'apartments', 'houses'],
+  alternates: {
+    canonical: '/'
+  },
   openGraph: {
-    title: "S Square Realty",
-    description: "Find your dream property",
-    url: "https://yourdomain.com",
-    siteName: "S Square Realty",
+    title: 'S-Square Marketings',
+    description: 'Find your dream property with S-Square Marketings.',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    siteName: 'S-Square Marketings',
     images: [
       {
-        url: "/og-image.png",
+        url: '/branding.png',
         width: 1200,
-        height: 630,
+        height: 630
       },
     ],
-    type: "website",
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'S-Square Marketings',
+    description: 'Find your dream property with S-Square Marketings.',
+    images: ['/branding.png']
   },
 }
 

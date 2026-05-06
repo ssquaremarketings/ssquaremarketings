@@ -5,6 +5,7 @@ import { PROJECT_TYPES } from '@/lib/types'
 import { Badge } from '@/components/ui/Badge'
 import { useState } from 'react'
 import MuxPlayer from '@mux/mux-player-react'
+import Image from 'next/image'
 
 type ProjectCardProps = {
   project: Project
@@ -15,7 +16,7 @@ export function ProjectCard({ project, onEnquire }: ProjectCardProps) {
   const imageSrc =
     project.image_urls?.length
       ? project.image_urls[0]
-      : project.image_url || '/placeholder.jpg';
+      : project.image_url || '/placeholder-project.svg'
   const typeInfo = PROJECT_TYPES.find((t) => t.value === project.type)
   const [isHovered, setIsHovered] = useState(false)
 
@@ -26,7 +27,7 @@ export function ProjectCard({ project, onEnquire }: ProjectCardProps) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative">
-        <div className="w-full overflow-hidden rounded-t-xl">
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-xl bg-slate-100">
           {project.mux_playback_id && isHovered ? (
             <MuxPlayer
               playbackId={project.mux_playback_id}
@@ -36,21 +37,23 @@ export function ProjectCard({ project, onEnquire }: ProjectCardProps) {
               playsInline
               style={{
                 width: '100%',
-                height: 'auto',
+                height: '100%',
                 objectFit: 'cover',
                 borderTopLeftRadius: '12px',
                 borderTopRightRadius: '12px',
-                aspectRatio: '4/3',
                 display: 'block',
               }}
             />
           ) : (
-            <img
+            <Image
               src={imageSrc}
               alt={project.name}
-              className="w-full h-auto object-cover"
-              style={{ aspectRatio: '4/3', display: 'block' }}
-              onError={e => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg'; }}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 33vw"
+              onError={(event) => {
+                (event.currentTarget as HTMLImageElement).src = '/placeholder-project.svg'
+              }}
             />
           )}
         </div>
@@ -65,7 +68,7 @@ export function ProjectCard({ project, onEnquire }: ProjectCardProps) {
           <Badge tag={project.tag} />
         </div>
         {/* Video Tour badge */}
-        {project.video_status === 'ready' && project.mux_playback_id && (
+        {project.mux_playback_id && (
           <span className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full z-10">
             ▶ Video Tour
           </span>
