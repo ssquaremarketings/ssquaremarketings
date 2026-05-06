@@ -1,0 +1,29 @@
+name: Keep Supabase Project Alive
+
+on:
+  schedule:
+    # Runs every 3 days at 9 AM UTC
+    - cron: '0 9 */3 * *'
+  workflow_dispatch:
+    # Allow manual trigger from Actions tab
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase API
+        run: |
+          echo "Keeping Supabase project alive..."
+          curl -X GET \
+            'https://upizkqlwhckjbmjxiafh.supabase.co/rest/v1/projects?select=id&limit=1' \
+            -H 'apikey: ${{ secrets.SUPABASE_ANON_KEY }}' \
+            -H 'Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}' \
+            -H 'Content-Type: application/json' \
+            -v
+          
+          if [ $? -eq 0 ]; then
+            echo "✓ Supabase keep-alive ping successful"
+          else
+            echo "✗ Supabase keep-alive ping failed"
+            exit 1
+          fi
