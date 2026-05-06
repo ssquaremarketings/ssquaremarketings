@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/'
   },
+  icons: {
+    icon: '/branding.png',
+    shortcut: '/branding.png',
+    apple: '/branding.png'
+  },
   openGraph: {
     title: 'S-Square Marketings',
     description: 'Find your dream property with S-Square Marketings.',
