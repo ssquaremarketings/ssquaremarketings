@@ -13,10 +13,19 @@ export async function POST(request: Request) {
 
   try {
     const body = contactLeadSchema.parse(await request.json())
-    const supabase = createClient(
-      getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
-      getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
-    )
+    
+    const supabaseUrl = getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL')
+    const serviceRoleKey = getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('[API/leads] Missing environment variables:', { 
+        hasUrl: !!supabaseUrl, 
+        hasKey: !!serviceRoleKey 
+      })
+      return errorResponse('Server configuration error', 500)
+    }
+    
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
 
     const { data, error } = await supabase
       .from('leads')
@@ -31,11 +40,13 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
+      console.error('[API/leads] Supabase insert error:', error)
       return errorResponse(error.message, 400)
     }
 
     return successResponse({ lead: data }, 201)
   } catch (err: any) {
+    console.error('[API/leads] Unexpected error:', err)
     if (err?.name === 'ZodError') {
       return errorResponse(err.issues?.[0]?.message || 'Invalid enquiry payload', 400)
     }
