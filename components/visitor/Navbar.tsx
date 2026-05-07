@@ -17,6 +17,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const navRef = useRef<HTMLElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     const onScroll = () => {
@@ -33,7 +34,13 @@ export function Navbar() {
 
   // Close menu when clicking outside or pressing escape
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: Event) => {
+      // Don't close if clicking the menu button
+      if (buttonRef.current && buttonRef.current.contains(event.target as Node)) {
+        return
+      }
+      
+      // Close if clicking outside the navbar
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
         setOpen(false)
       }
@@ -46,10 +53,15 @@ export function Navbar() {
     }
 
     if (open) {
-      document.addEventListener('mousedown', handleClickOutside)
-      document.addEventListener('keydown', handleEscape)
+      // Use a small timeout to ensure state is updated before attaching listeners
+      const timer = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside)
+        document.addEventListener('keydown', handleEscape)
+      }, 0)
+      
       return () => {
-        document.removeEventListener('mousedown', handleClickOutside)
+        clearTimeout(timer)
+        document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('keydown', handleEscape)
       }
     }
@@ -61,10 +73,7 @@ export function Navbar() {
       {open && (
         <div
           className="fixed inset-0 top-20 z-40 bg-black/20 lg:hidden"
-          onClick={(e) => {
-            e.stopPropagation()
-            setOpen(false)
-          }}
+          onClick={() => setOpen(false)}
           aria-hidden="true"
         />
       )}
@@ -76,6 +85,7 @@ export function Navbar() {
         </Link>
 
         <button
+          ref={buttonRef}
           type="button"
           className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border lg:hidden ${scrolled ? 'border-slate-300 text-primary' : 'border-white/30 text-white'}`}
           onClick={(e) => {
