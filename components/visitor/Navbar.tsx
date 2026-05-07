@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 
 const links = [
@@ -16,16 +16,57 @@ const links = [
 export function Navbar() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const navRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24)
+    const onScroll = () => {
+      setScrolled(window.scrollY > 24)
+      // Close menu when scrolling
+      if (open) {
+        setOpen(false)
+      }
+    }
     onScroll()
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  }, [open])
+
+  // Close menu when clicking outside or pressing escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleEscape)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('keydown', handleEscape)
+      }
+    }
+  }, [open])
 
   return (
-    <header className={`fixed inset-x-0 top-0 z-50 transition-all ${scrolled ? 'bg-white/95 shadow-sm backdrop-blur' : 'bg-transparent'}`}>
+    <>
+      {/* Mobile overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 top-20 z-40 bg-black/20 lg:hidden"
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      
+      <header ref={navRef} className={`fixed inset-x-0 top-0 z-50 transition-all ${scrolled ? 'bg-white/95 shadow-sm backdrop-blur' : 'bg-transparent'}`}>
       <div className="container-shell flex h-20 items-center justify-between gap-4">
         <Link href="#home" className="flex items-center gap-2">
           <Image src="/branding.png" alt="S-Square Marketings Logo" width={160} height={40} className="h-10 w-auto" />
@@ -57,11 +98,12 @@ export function Navbar() {
               </a>
             ))}
           </div>
-          <a href="/admin/login" className="mt-3 inline-flex rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-primary lg:mt-0">
+          <a href="/admin/login" onClick={() => setOpen(false)} className="mt-3 inline-flex rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-primary lg:mt-0">
             Admin
           </a>
         </nav>
       </div>
     </header>
+    </>
   )
 }
