@@ -42,6 +42,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => onClose?.()}
               className={`rounded-xl px-4 py-3 text-sm font-medium transition ${active ? 'bg-white/10' : 'hover:bg-white/5'}`}
             >
               {item.label}
@@ -52,6 +53,7 @@ export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
 
       <Link
         href="/"
+        onClick={() => onClose?.()}
         className="mt-6 inline-flex items-center justify-center rounded-full border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10"
       >
         Back to Home
