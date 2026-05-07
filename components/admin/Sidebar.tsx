@@ -12,7 +12,12 @@ const navItems = [
   { label: 'Reviews', href: '/admin/reviews' }
 ]
 
-export function Sidebar() {
+type SidebarProps = {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -22,7 +27,9 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex min-h-screen w-64 flex-col bg-primary px-5 py-6 text-white">
+    <aside className={`fixed bottom-0 left-0 top-0 z-40 w-64 flex-col bg-primary px-5 py-6 text-white transition-transform md:static md:translate-x-0 md:z-0 ${
+      isOpen ? 'flex translate-x-0' : '-translate-x-full flex'
+    }`}>
       <div className="flex flex-col items-start">
         <Image src="/branding.png" alt="S-Square Marketings Logo" width={160} height={40} className="h-10 w-auto mb-2" />
         <p className="mt-1 text-sm text-white/70">Admin CMS</p>
@@ -52,11 +59,22 @@ export function Sidebar() {
 
       <button
         type="button"
-        className="mt-3 rounded-full border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10 lg:mt-auto"
+        className="mt-3 rounded-full border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10 md:mt-auto"
         onClick={handleLogout}
       >
         Logout
       </button>
+
+      {/* Close button for mobile */}
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-auto rounded-full border border-white/20 px-4 py-3 text-sm font-semibold transition hover:bg-white/10 md:hidden"
+        >
+          Close Menu
+        </button>
+      )}
     </aside>
   )
 }

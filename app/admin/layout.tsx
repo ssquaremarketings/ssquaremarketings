@@ -6,10 +6,36 @@ import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Sidebar } from '@/components/admin/Sidebar'
 
+function HamburgerMenu({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="fixed left-4 top-4 z-50 flex h-10 w-10 flex-col items-center justify-center gap-1 rounded-lg bg-primary md:hidden"
+      aria-label="Toggle menu"
+    >
+      <span className="h-0.5 w-6 bg-white"></span>
+      <span className="h-0.5 w-6 bg-white"></span>
+      <span className="h-0.5 w-6 bg-white"></span>
+    </button>
+  )
+}
+
+function MobileOverlay({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null
+  return (
+    <div
+      className="fixed inset-0 z-30 bg-black/50 md:hidden"
+      onClick={onClose}
+      aria-label="Close menu"
+    />
+  )
+}
+
 export default function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname()
   const router = useRouter()
   const [checking, setChecking] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -62,9 +88,11 @@ export default function AdminLayout({ children }: Readonly<{ children: ReactNode
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 lg:flex">
-      <Sidebar />
-      <main className="flex-1 p-4 lg:p-8">{children}</main>
+    <div className="min-h-screen bg-slate-50 md:flex">
+      <HamburgerMenu onClick={() => setSidebarOpen(true)} />
+      <MobileOverlay isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <main className="flex-1 p-4 pt-16 md:p-8 md:pt-8">{children}</main>
     </div>
   )
 }
