@@ -61,7 +61,10 @@ export function Navbar() {
       {open && (
         <div
           className="fixed inset-0 top-20 z-40 bg-black/20 lg:hidden"
-          onClick={() => setOpen(false)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setOpen(false)
+          }}
           aria-hidden="true"
         />
       )}
@@ -75,7 +78,10 @@ export function Navbar() {
         <button
           type="button"
           className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border lg:hidden ${scrolled ? 'border-slate-300 text-primary' : 'border-white/30 text-white'}`}
-          onClick={() => setOpen((value) => !value)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setOpen((value) => !value)
+          }}
           aria-label="Toggle navigation"
           aria-expanded={open}
         >
@@ -85,7 +91,7 @@ export function Navbar() {
           <span className="absolute block h-0.5 w-5 -translate-y-1.5 bg-current" />
         </button>
 
-        <nav className={`absolute left-4 right-4 top-20 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft transition-all lg:static lg:flex lg:items-center lg:gap-6 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${open ? 'block' : 'hidden lg:flex'}`}>
+        <nav className={`absolute left-4 right-4 top-20 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft transition-all lg:static lg:flex lg:items-center lg:gap-6 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${open ? 'block' : 'hidden lg:flex'}`} onClick={(e) => e.stopPropagation()}>
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-2">
             {links.map((link) => (
               <a
