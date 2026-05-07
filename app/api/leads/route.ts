@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
+    const emailLine = body.email ? `Email: ${body.email}\n\n` : ''
     const { data, error } = await supabase
       .from('leads')
       .insert({
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
         phone: body.phone,
         budget: body.subject,
         property: 'General Inquiry',
-        message: sanitize(`Email: ${body.email}\n\n${body.message || ''}`.trim()),
+        message: sanitize(`${emailLine}${body.message || ''}`.trim()),
       })
       .select()
       .single()

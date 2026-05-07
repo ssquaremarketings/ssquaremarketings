@@ -35,7 +35,7 @@ export function ContactSection() {
       return
     }
 
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) {
       setToast({ message: 'Please enter a valid email address.', type: 'error' })
       return
     }
@@ -115,7 +115,7 @@ export function ContactSection() {
               <input value={phone} onChange={(event) => setPhone(event.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-primary" suppressHydrationWarning />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Email <span className="text-xs text-gray-400">(optional)</span></label>
               <input value={email} onChange={(event) => setEmail(event.target.value)} className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-primary" suppressHydrationWarning />
             </div>
             <div>

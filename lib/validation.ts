@@ -48,7 +48,7 @@ export const enquirySchema = z.object({
 export const contactLeadSchema = z.object({
   name: z.string().trim().min(2).max(120),
   phone: z.string().trim().regex(/^\d{10}$/, 'Phone must be exactly 10 digits'),
-  email: z.string().trim().email().max(160),
+  email: z.string().trim().email().max(160).optional().nullable(),
   subject: z.enum(['General Inquiry', 'Plot Inquiry', 'Site Visit']),
   message: z.string().trim().max(5000).optional().nullable(),
 }).strict()
