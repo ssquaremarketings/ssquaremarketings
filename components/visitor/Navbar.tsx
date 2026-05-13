@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase'
 
 const links = [
   { label: 'Home', href: '#home' },
@@ -16,6 +17,7 @@ const links = [
 export function Navbar() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [showAdminLink, setShowAdminLink] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -26,6 +28,30 @@ export function Navbar() {
     onScroll()
     window.addEventListener('scroll', onScroll)
     return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    const checkAdminSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      if (active) {
+        setShowAdminLink(Boolean(data.session))
+      }
+    }
+
+    checkAdminSession()
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) {
+        setShowAdminLink(Boolean(session))
+      }
+    })
+
+    return () => {
+      active = false
+      subscription.subscription.unsubscribe()
+    }
   }, [])
 
   useEffect(() => {
@@ -94,9 +120,11 @@ export function Navbar() {
               </a>
             ))}
           </nav>
-          <a href="/admin/login" onClick={() => setOpen(false)} className="mt-3 inline-flex rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-primary lg:mt-0">
-            Admin
-          </a>
+          {showAdminLink ? (
+            <a href="/admin/login" onClick={() => setOpen(false)} className="mt-3 inline-flex rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-primary lg:mt-0">
+              Admin
+            </a>
+          ) : null}
         </div>
       </div>
     </header>
