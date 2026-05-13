@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Lead, LeadStatus } from '@/lib/types'
-import { SAMPLE_LEADS } from '@/lib/sample-data'
 import { LeadsTable } from '@/components/admin/LeadsTable'
 import { Modal } from '@/components/ui/Modal'
 import { Toast } from '@/components/ui/Toast'
@@ -80,26 +79,6 @@ export default function AdminLeadsPage() {
     URL.revokeObjectURL(url)
   }
 
-  const seedSampleLeads = async () => {
-    const { data: existing } = await supabase.from('leads').select('name, phone, property')
-    const existingKeys = new Set((existing ?? []).map((lead) => `${lead.name}-${lead.phone}-${lead.property || ''}`))
-    const rowsToInsert = SAMPLE_LEADS.filter((lead) => !existingKeys.has(`${lead.name}-${lead.phone}-${lead.property || ''}`))
-
-    if (rowsToInsert.length === 0) {
-      setToast({ message: 'Sample leads are already present.', type: 'success' })
-      return
-    }
-
-    const { error } = await supabase.from('leads').insert(rowsToInsert)
-    if (error) {
-      setToast({ message: 'Could not seed sample leads.', type: 'error' })
-      return
-    }
-
-    await loadLeads()
-    setToast({ message: `Inserted ${rowsToInsert.length} sample leads.`, type: 'success' })
-  }
-
   return (
     <div className="space-y-6">
       {toast ? <Toast message={toast.message} type={toast.type} /> : null}
@@ -109,9 +88,6 @@ export default function AdminLeadsPage() {
           <h1 className="mt-2 text-3xl font-bold text-primary">Lead Management</h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={seedSampleLeads} className="rounded-full border border-primary px-5 py-3 font-semibold text-primary">
-            Seed Sample Leads
-          </button>
           <button type="button" onClick={exportCsv} className="rounded-full bg-amber-500 px-5 py-3 font-semibold text-primary">
             Export CSV
           </button>

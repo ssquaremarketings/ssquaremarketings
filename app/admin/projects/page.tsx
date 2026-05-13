@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Project } from '@/lib/types'
-import { SAMPLE_PROJECTS } from '@/lib/sample-data'
 import { Badge } from '@/components/ui/Badge'
 import { Toast } from '@/components/ui/Toast'
 
@@ -77,26 +76,6 @@ export default function AdminProjectsPage() {
     setToast({ message: 'Project deleted.', type: 'success' })
   }
 
-  const seedSampleProjects = async () => {
-    const { data: existing } = await supabase.from('projects').select('name')
-    const existingNames = new Set((existing ?? []).map((item) => item.name))
-    const rowsToInsert = SAMPLE_PROJECTS.filter((project) => !existingNames.has(project.name))
-
-    if (rowsToInsert.length === 0) {
-      setToast({ message: 'Sample projects are already present.', type: 'success' })
-      return
-    }
-
-    const { error } = await supabase.from('projects').insert(rowsToInsert)
-    if (error) {
-      setToast({ message: 'Could not seed sample projects.', type: 'error' })
-      return
-    }
-
-    await loadProjects()
-    setToast({ message: `Inserted ${rowsToInsert.length} sample projects.`, type: 'success' })
-  }
-
   return (
     <div className="space-y-6">
       {toast ? <Toast message={toast.message} type={toast.type} /> : null}
@@ -117,9 +96,6 @@ export default function AdminProjectsPage() {
               <option key={type} value={type}>{type}</option>
             ))}
           </select>
-          <button type="button" onClick={seedSampleProjects} className="rounded-full border border-primary px-5 py-3 font-semibold text-primary">
-            Seed Sample Projects
-          </button>
           <Link href="/admin/projects/new" className="rounded-full bg-amber-500 px-5 py-3 font-semibold text-primary">
             Add New Project
           </Link>
