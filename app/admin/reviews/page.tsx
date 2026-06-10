@@ -104,21 +104,67 @@ export default function AdminReviewsPage() {
   }
 
   async function handleFeature(id: string, featured: boolean) {
+    console.log("Feature review:", id)
     setActionLoading(id + "-feature");
-    setReviews((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, featured: !featured } : r))
-    );
-    await supabase.from("reviews").update({ featured: !featured }).eq("id", id);
-    setActionLoading(null);
-    fetchReviews();
+    try {
+      const response = await fetch("/api/admin/reviews", {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reviewId: id, action: "feature" }),
+      });
+
+      const payload = await response.json();
+      console.log("[AdminReviewsPage] Feature API response payload:", payload);
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to feature review");
+      }
+
+      setReviews((prev) =>
+        prev.map((review) =>
+          review.id === id ? { ...review, featured: true } : review
+        )
+      );
+      await fetchReviews();
+    } catch (featureError: any) {
+      console.error("[AdminReviewsPage] Feature error:", featureError);
+      setError(featureError?.message || "Failed to feature review");
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   async function handleDelete(id: string) {
+    console.log("Delete review:", id)
     setActionLoading(id + "-delete");
-    setReviews((prev) => prev.filter((r) => r.id !== id));
-    await supabase.from("reviews").delete().eq("id", id);
-    setActionLoading(null);
-    fetchReviews();
+    try {
+      const response = await fetch("/api/admin/reviews", {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reviewId: id, action: "delete" }),
+      });
+
+      const payload = await response.json();
+      console.log("[AdminReviewsPage] Delete API response payload:", payload);
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to delete review");
+      }
+
+      setReviews((prev) => prev.filter((review) => review.id !== id));
+      await fetchReviews();
+    } catch (deleteError: any) {
+      console.error("[AdminReviewsPage] Delete error:", deleteError);
+      setError(deleteError?.message || "Failed to delete review");
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   let filtered = reviews;
