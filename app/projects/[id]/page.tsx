@@ -9,6 +9,7 @@ import ReviewCard from '@/components/visitor/ReviewCard'
 import ReviewForm from '@/components/visitor/ReviewForm'
 import type { Metadata } from 'next'
 import Script from 'next/script'
+import { formatAreaInCents, formatPricePerCent } from '@/lib/project-format'
 
 async function getProject(id: string) {
   const supabase = createSupabaseServerClient()
@@ -162,9 +163,9 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
             <div className="text-3xl font-bold text-[#1a3c5e] mb-2">{project.price}</div>
             {(project.price_per_sqyd || project.area) && (
               <div className="text-sm text-gray-500 mb-2">
-                {project.price_per_sqyd}
+                {formatPricePerCent(project.price_per_sqyd)}
                 {project.price_per_sqyd && project.area ? ' · ' : ''}
-                {project.area}
+                {formatAreaInCents(project.area)}
               </div>
             )}
             <EnquiryModal project={project}>

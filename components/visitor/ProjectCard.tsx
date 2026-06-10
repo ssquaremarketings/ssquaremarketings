@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { useState } from 'react'
 import MuxPlayer from '@mux/mux-player-react'
 import Image from 'next/image'
+import { formatAreaInCents, formatPricePerCent } from '@/lib/project-format'
 
 type ProjectCardProps = {
   project: Project
@@ -86,9 +87,9 @@ export function ProjectCard({ project, onEnquire }: ProjectCardProps) {
           <p className="text-xl font-bold text-amber-600">{project.price}</p>
           {(project.price_per_sqyd || project.area) && (
             <p className="mt-1 text-sm text-slate-500">
-              {project.price_per_sqyd}
+              {formatPricePerCent(project.price_per_sqyd)}
               {project.price_per_sqyd && project.area ? ' · ' : ''}
-              {project.area}
+              {formatAreaInCents(project.area)}
             </p>
           )}
         </div>

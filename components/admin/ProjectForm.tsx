@@ -6,13 +6,16 @@ import { sanitize } from '@/utils/sanitize'
 import { PROJECT_TYPES } from '@/lib/types'
 import VideoUpload from './VideoUpload'
 import { useRouter } from 'next/navigation'
-import type { Project, ProjectTag } from '@/lib/types'
+import type { Project } from '@/lib/types'
 import { uploadToCloudinary } from '@/lib/cloudinary'
 import { FileUpload } from '@/components/ui/FileUpload'
 import { Toast } from '@/components/ui/Toast'
 import MuxPlayer from '@mux/mux-player-react'
 import Image from 'next/image'
 import { projectCreateSchema, projectUpdateSchema } from '@/lib/validation'
+import { PRESET_PROJECT_TAGS, extractFirstNumericValue, isPositiveNumberInput } from '@/lib/project-format'
+
+type TagMode = 'preset' | 'custom'
 
 type ProjectFormProps = {
   isEditing?: boolean
@@ -21,7 +24,7 @@ type ProjectFormProps = {
 
 const initialForm = {
   name: '',
-  tag: 'available' as ProjectTag,
+  tag: 'available',
   type: '',
   location: '',
   price: '',
@@ -34,6 +37,8 @@ const initialForm = {
 export function ProjectForm({ isEditing = false, project = null }: ProjectFormProps) {
   const router = useRouter()
   const [form, setForm] = useState(initialForm)
+  const [tagMode, setTagMode] = useState<TagMode>('preset')
+  const [customTag, setCustomTag] = useState('')
   // Video state
   const [muxAssetId, setMuxAssetId] = useState(project?.mux_asset_id ?? null)
   const [muxPlaybackId, setMuxPlaybackId] = useState(project?.mux_playback_id ?? null)
@@ -109,17 +114,22 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
 
   useEffect(() => {
     if (!project) return
+    const nextTag = project.tag?.trim() || 'available'
+    const isPresetTag = PRESET_PROJECT_TAGS.some((option) => option.value === nextTag)
+
     setForm({
       name: project.name,
-      tag: project.tag,
+      tag: nextTag,
       type: project.type,
       location: project.location,
       price: project.price,
-      price_per_sqyd: project.price_per_sqyd || '',
-      area: project.area || '',
+      price_per_sqyd: extractFirstNumericValue(project.price_per_sqyd),
+      area: extractFirstNumericValue(project.area),
       description: project.description || '',
       published: project.published
     })
+    setTagMode(isPresetTag ? 'preset' : 'custom')
+    setCustomTag(isPresetTag ? '' : nextTag)
     setImagePreview(project.image_url || null)
     setBrochureName(project.brochure_url ? 'Existing brochure on file' : '')
     setMuxAssetId(project.mux_asset_id ?? null)
@@ -147,7 +157,16 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
     void persistProject()
   }, [uploading, pendingSaveAfterUpload, loading])
 
-  const canSubmit = useMemo(() => form.name.trim() && form.location.trim() && form.price.trim() && form.type, [form])
+  const canSubmit = useMemo(() => {
+    return (
+      form.name.trim() &&
+      form.location.trim() &&
+      form.price.trim() &&
+      isPositiveNumberInput(form.price_per_sqyd) &&
+      isPositiveNumberInput(form.area) &&
+      form.type
+    )
+  }, [form])
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -186,12 +205,12 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
 
       const payload = {
         name: sanitize(form.name.trim()),
-        tag: form.tag,
+        tag: sanitize(form.tag.trim()),
         type: form.type,
         location: sanitize(form.location.trim()),
         price: sanitize(form.price.trim()),
-        price_per_sqyd: sanitize(form.price_per_sqyd.trim()) || null,
-        area: sanitize(form.area.trim()) || null,
+        price_per_sqyd: sanitize(extractFirstNumericValue(form.price_per_sqyd)) || null,
+        area: sanitize(extractFirstNumericValue(form.area)) || null,
         description: sanitize(form.description.trim()) || null,
         image_url: imageUrl || null,
         image_urls: images,
@@ -284,12 +303,65 @@ export function ProjectForm({ isEditing = false, project = null }: ProjectFormPr
             <input value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-primary" placeholder="₹18 Lakhs onwards" suppressHydrationWarning />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Price per Sq.yd</label>
-            <input value={form.price_per_sqyd} onChange={(event) => setForm({ ...form, price_per_sqyd: event.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-primary" suppressHydrationWarning />
+            <label className="mb-1 block text-sm font-medium text-slate-700">Price per Cent</label>
+            <input value={form.price_per_sqyd} onChange={(event) => setForm({ ...form, price_per_sqyd: event.target.value })} placeholder="300000" inputMode="numeric" className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-primary" suppressHydrationWarning />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Area</label>
-            <input value={form.area} onChange={(event) => setForm({ ...form, area: event.target.value })} className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-primary" suppressHydrationWarning />
+            <label className="mb-1 block text-sm font-medium text-slate-700">Area (Cents)</label>
+            <input value={form.area} onChange={(event) => setForm({ ...form, area: event.target.value })} placeholder="10" inputMode="numeric" className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-primary" suppressHydrationWarning />
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Tag</label>
+            <select
+              value={tagMode === 'custom' ? 'custom' : form.tag}
+              onChange={(event) => {
+                const selectedValue = event.target.value
+                if (selectedValue === 'custom') {
+                  setTagMode('custom')
+                  setForm({ ...form, tag: customTag.trim() })
+                  return
+                }
+
+                setTagMode('preset')
+                setForm({ ...form, tag: selectedValue })
+              }}
+              className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-primary"
+              suppressHydrationWarning
+            >
+              {PRESET_PROJECT_TAGS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+              <option value="custom">Custom tag</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              {tagMode === 'custom' ? 'Custom Tag' : 'Tag Preview'}
+            </label>
+            {tagMode === 'custom' ? (
+              <input
+                value={customTag}
+                onChange={(event) => {
+                  const nextValue = event.target.value
+                  setCustomTag(nextValue)
+                  setForm({ ...form, tag: nextValue })
+                }}
+                placeholder="New Launch"
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-primary"
+                suppressHydrationWarning
+              />
+            ) : (
+              <input
+                value={form.tag}
+                readOnly
+                className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none focus:border-primary bg-slate-50 text-slate-600"
+                suppressHydrationWarning
+              />
+            )}
           </div>
         </div>
 

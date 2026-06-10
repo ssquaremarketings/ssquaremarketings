@@ -26,6 +26,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
   const types = [
     'All',
     'Houses',
+    'House/Plot',
     'Apartments',
     'Flats',
     'Agriculture Lands',
@@ -37,6 +38,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
   // Map UI type to backend type value
   const typeMap: Record<string, string> = {
     'Houses': 'houses',
+    'House/Plot': 'house-plot',
     'Apartments': 'apartments',
     'Flats': 'apartments', // Alias for apartments
     'Agriculture Lands': 'agriculture-land',

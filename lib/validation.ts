@@ -1,20 +1,21 @@
 import { z } from 'zod'
 
 export const projectTagValues = ['available', 'hot-deal', 'featured'] as const
-export const projectTypeValues = ['houses', 'apartments', 'agriculture-land', 'commercial-space', 'open-plots', 'our-ventures'] as const
+export const projectTypeValues = ['houses', 'house-plot', 'apartments', 'agriculture-land', 'commercial-space', 'open-plots', 'our-ventures'] as const
 export const videoStatusValues = ['none', 'uploading', 'processing', 'ready', 'error'] as const
 
 const remoteUrl = z.string().url().max(2048)
 const optionalText = z.union([z.string().trim().max(5000), z.null()]).optional()
+const positiveNumberText = z.string().trim().regex(/^\d+(?:\.\d+)?$/, 'Must be a positive number')
 
 export const projectCreateSchema = z.object({
   name: z.string().trim().min(2).max(160),
-  tag: z.enum(projectTagValues),
+  tag: z.string().trim().min(1).max(80),
   type: z.enum(projectTypeValues),
   location: z.string().trim().min(2).max(200),
   price: z.string().trim().min(1).max(100),
-  price_per_sqyd: optionalText,
-  area: optionalText,
+  price_per_sqyd: positiveNumberText,
+  area: positiveNumberText,
   description: optionalText,
   image_url: z.union([remoteUrl, z.null()]).optional(),
   image_urls: z.array(remoteUrl).max(20).optional(),
