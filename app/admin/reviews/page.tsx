@@ -104,7 +104,8 @@ export default function AdminReviewsPage() {
   }
 
   async function handleFeature(id: string, featured: boolean) {
-    console.log("Feature review:", id)
+    const nextFeatured = !featured
+    console.log("Feature review:", id, nextFeatured)
     setActionLoading(id + "-feature");
     try {
       const response = await fetch("/api/admin/reviews", {
@@ -113,7 +114,7 @@ export default function AdminReviewsPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ reviewId: id, action: "feature" }),
+        body: JSON.stringify({ reviewId: id, action: "feature", featured: nextFeatured }),
       });
 
       const payload = await response.json();
@@ -125,7 +126,7 @@ export default function AdminReviewsPage() {
 
       setReviews((prev) =>
         prev.map((review) =>
-          review.id === id ? { ...review, featured: true } : review
+          review.id === id ? { ...review, featured: nextFeatured } : review
         )
       );
       await fetchReviews();

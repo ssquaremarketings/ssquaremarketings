@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const payload = await request.json()
     console.log('[API/admin/reviews] request payload:', payload)
 
-    const { reviewId, action } = payload ?? {}
+    const { reviewId, action, featured } = payload ?? {}
 
     if (!reviewId) {
       return errorResponse('Missing reviewId', 400)
@@ -92,9 +92,10 @@ export async function POST(request: Request) {
     }
 
     if (action === 'feature') {
+      const nextFeatured = typeof featured === 'boolean' ? featured : true
       const { data, error } = await supabase
         .from('reviews')
-        .update({ featured: true })
+        .update({ featured: nextFeatured })
         .eq('id', reviewId)
         .select('id, approved, featured, reviewer_name, property, review_text, created_at')
         .maybeSingle()
