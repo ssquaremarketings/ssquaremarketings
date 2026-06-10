@@ -44,13 +44,29 @@ export default function AdminReviewsPage() {
   async function fetchReviews() {
     setLoading(true);
     setError(null);
-    const { data, error } = await supabase
-      .from("reviews")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) setError(error.message);
-    setReviews(data || []);
-    setLoading(false);
+    try {
+      const response = await fetch("/api/admin/reviews", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      const payload = await response.json();
+      console.log("[AdminReviewsPage] API response payload:", payload);
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to load reviews");
+      }
+
+      const nextReviews = payload?.data?.reviews || [];
+      console.log("[AdminReviewsPage] total reviews returned:", nextReviews.length);
+      setReviews(nextReviews);
+    } catch (fetchError: any) {
+      console.error("[AdminReviewsPage] Supabase/API error:", fetchError);
+      setError(fetchError?.message || "Failed to load reviews");
+      setReviews([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -150,7 +166,7 @@ export default function AdminReviewsPage() {
                 </span>
               </div>
               <div className="text-gray-700 mb-2">{review.review_text}</div>
-              <div className="text-sm text-gray-500 mb-2">{review.property_name}</div>
+              <div className="text-sm text-gray-500 mb-2">{review.property}</div>
               <div className="flex items-center gap-2 mb-2">
                 {review.featured && (
                   <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs font-semibold">Featured</span>
