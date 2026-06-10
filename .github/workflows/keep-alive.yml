@@ -15,7 +15,7 @@ jobs:
         run: |
           echo "Keeping Supabase project alive..."
           curl -X GET \
-            'https://upizkqlwhckjbmjxiafh.supabase.co/rest/v1/projects?select=id&limit=1' \
+            'https://oqhyvnxpyrwmqnkgftlf.supabase.co/rest/v1/projects?select=id&limit=1' \
             -H 'apikey: ${{ secrets.SUPABASE_ANON_KEY }}' \
             -H 'Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}' \
             -H 'Content-Type: application/json' \
