@@ -75,13 +75,32 @@ export default function AdminReviewsPage() {
   }, []);
 
   async function handleApprove(id: string) {
+    console.log('Approving review:', id)
     setActionLoading(id + "-approve");
-    setReviews((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, approved: true } : r))
-    );
-    await supabase.from("reviews").update({ approved: true }).eq("id", id);
-    setActionLoading(null);
-    fetchReviews();
+    try {
+      const response = await fetch("/api/admin/reviews", {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reviewId: id }),
+      });
+
+      const payload = await response.json();
+      console.log("[AdminReviewsPage] Approval API response payload:", payload);
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to approve review");
+      }
+
+      await fetchReviews();
+    } catch (approveError: any) {
+      console.error("[AdminReviewsPage] Approval error:", approveError);
+      setError(approveError?.message || "Failed to approve review");
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   async function handleFeature(id: string, featured: boolean) {

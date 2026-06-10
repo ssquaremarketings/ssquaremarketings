@@ -42,3 +42,54 @@ export async function GET() {
     return errorResponse(err?.message || 'Server error', 500)
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const payload = await request.json()
+    console.log('[API/admin/reviews] request payload:', payload)
+
+    const { reviewId } = payload ?? {}
+
+    if (!reviewId) {
+      return errorResponse('Missing reviewId', 400)
+    }
+
+    const { session, authorized } = await requireAdminSession()
+
+    if (!session) {
+      return errorResponse('Unauthorized', 401)
+    }
+
+    if (!authorized) {
+      return errorResponse('Forbidden', 403)
+    }
+
+    const supabase = createClient(
+      getRequiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
+      getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY')
+    )
+
+    const { data, error } = await supabase
+      .from('reviews')
+      .update({ approved: true })
+      .eq('id', reviewId)
+      .select('id, approved, reviewer_name, property, review_text, created_at')
+      .maybeSingle()
+
+    console.log('[API/admin/reviews] Update result:', data)
+    console.log('[API/admin/reviews] Update error:', error)
+
+    if (error) {
+      return errorResponse(error.message, 500)
+    }
+
+    if (!data) {
+      return errorResponse('Review not found', 404)
+    }
+
+    return successResponse({ review: data }, 200)
+  } catch (err: any) {
+    console.error('[API/admin/reviews] Approval unexpected error:', err)
+    return errorResponse(err?.message || 'Server error', 500)
+  }
+}
