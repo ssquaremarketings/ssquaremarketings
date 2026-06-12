@@ -26,13 +26,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: `${baseUrl}/`,
       lastModified: new Date(),
-      changeFrequency: 'daily',
+      changeFrequency: 'daily' as const,
       priority: 1.0
     },
     {
       url: `${baseUrl}/projects`,
       lastModified: new Date(),
-      changeFrequency: 'daily',
+      changeFrequency: 'daily' as const,
       priority: 0.9
     }
   ]
@@ -42,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? {
           url: `${baseUrl}/about`,
           lastModified: new Date(),
-          changeFrequency: 'weekly',
+          changeFrequency: 'weekly' as const,
           priority: 0.6
         }
       : null,
@@ -50,7 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? {
           url: `${baseUrl}/contact`,
           lastModified: new Date(),
-          changeFrequency: 'weekly',
+          changeFrequency: 'weekly' as const,
           priority: 0.6
         }
       : null
@@ -60,7 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const projectEntries: MetadataRoute.Sitemap = (projects ?? []).map((project) => ({
     url: `${baseUrl}/projects/${project.id}`,
     lastModified: toDate(project.updated_at),
-    changeFrequency: 'weekly',
+    changeFrequency: 'weekly' as const,
     priority: 0.8
   }))
 
